@@ -39,3 +39,12 @@ This document describes allowed payment statuses and transition rules.
 Возвраты не входят в MVP. Поэтому статусы REFUNDED и PARTIALLY_REFUNDED будут добавлены на следующем этапе развития системы.
 
 Refunds are out of MVP scope. Therefore, REFUNDED and PARTIALLY_REFUNDED statuses will be added in the next project stage.
+## Диаграмма жизненного цикла платежа / Payment State Machine Diagram
+
+![Жизненный цикл платежа](../diagrams/payment_state_machine.png)
+
+Редактируемый файл draw.io: [payment_state_machine.drawio](../diagrams/payment_state_machine.drawio)
+
+Диаграмма показывает допустимые состояния платежа в рамках MVP: создание платежа, отправку в обработку, успешное завершение, ошибку обработки и отмену до отправки в банк-эквайер.
+
+The diagram shows allowed payment states within the MVP scope: payment creation, processing, successful completion, processing failure, and cancellation before sending the payment to the acquiring bank.
