@@ -49,8 +49,23 @@
 
 ## Диаграммы процесса / Process Diagrams
 
-### Детальная схема обработки платежа
+### Детальная схема обработки платежа / Detailed Payment Processing Flow
 
 ![Детальная схема обработки платежа](../diagrams/bpmn_payment_process_detailed.png)
 
-Исходный редактируемый файл: `../diagrams/bpmn_payment_process_detailed.drawio`
+Редактируемый файл draw.io: [bpmn_payment_process_detailed.drawio](../diagrams/bpmn_payment_process_detailed.drawio)
+
+Диаграмма показывает детальный процесс создания и обработки платежа: оформление заказа покупателем, создание платежа мерчантом, проверку запроса и ключа идемпотентности, создание записей в системе, обращение к заглушке банка-эквайера, получение результата оплаты, обновление статуса платежа и отправку webhook-уведомления мерчанту.
+
+The diagram shows the detailed payment creation and processing flow: customer order placement, payment creation by the merchant, request and idempotency key validation, system record creation, interaction with the mock acquiring bank, payment result processing, payment status update, and webhook notification delivery to the merchant.
+
+### Условные обозначения / Notation
+
+Цельные стрелки показывают последовательность операций внутри одного участника процесса.
+
+Пунктирные стрелки показывают обмен сообщениями между участниками системы: API-запросы, ответы, callback и webhook.
+
+Solid arrows show the sequence of operations within one process participant.
+
+Dashed arrows show message exchange between system participants: API requests, responses, callbacks, and webhooks.
+
