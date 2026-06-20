@@ -1,342 +1,452 @@
-```yaml
 openapi: 3.0.3
 
 info:
-  title: Payment Gateway API
-  version: 1.0.0
-  description: API for creating and processing payments in a payment gateway system.
+title: Payment Gateway API
+description: API specification for the MVP payment processing system.
+version: 1.0.0
 
 servers:
-  - url: http://localhost:8000/api/v1
+
+* url: http://localhost:8000/api/v1
+  description: Local development server
 
 tags:
-  - name: Payments
-    description: Payment creation and status management
-  - name: Acquiring
-    description: Mock acquiring bank callback processing
+
+* name: Payments
+  description: Payment creation, status retrieval and cancellation
+* name: Acquiring
+  description: Mock acquiring bank callback processing
 
 security:
-  - ApiKeyAuth: []
+
+* ApiKeyAuth: []
 
 paths:
-  /payments:
-    post:
-      tags:
-        - Payments
-      summary: Create payment
-      operationId: createPayment
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema:
-            type: string
-            example: order-1001-payment-1
-          description: Unique key used to prevent duplicate payment creation.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreatePaymentRequest"
-      responses:
-        "201":
-          description: Payment created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentResponse"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "401":
-          description: Invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Idempotency key conflict
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+/payments:
+post:
+tags:
+- Payments
+summary: Create payment
+description: Creates a new payment for a merchant order.
+operationId: createPayment
+parameters:
+- name: Idempotency-Key
+in: header
+required: true
+description: Unique key used to prevent duplicate payment creation.
+schema:
+type: string
+example: idem_7f8a9b10
+requestBody:
+required: true
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/CreatePaymentRequest"
+example:
+merchant_order_id: order_10001
+amount_minor: 125000
+currency: RUB
+description: Payment for order order_10001
+responses:
+"201":
+description: Payment created successfully
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/PaymentResponse"
+example:
+payment_id: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+merchant_order_id: order_10001
+amount_minor: 125000
+currency: RUB
+status: CREATED
+description: Payment for order order_10001
+created_at: "2026-06-20T10:15:30Z"
+updated_at: "2026-06-20T10:15:30Z"
+"400":
+description: Invalid request parameters
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"401":
+description: Invalid or missing API key
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"409":
+description: Idempotency key conflict
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
 
-  /payments/{payment_id}:
-    get:
-      tags:
-        - Payments
-      summary: Get payment by id
-      operationId: getPaymentById
-      parameters:
-        - name: payment_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Payment found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentResponse"
-        "401":
-          description: Invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Payment not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+/payments/{payment_id}:
+get:
+tags:
+- Payments
+summary: Get payment status
+description: Returns payment information and current payment status.
+operationId: getPaymentStatus
+parameters:
+- name: payment_id
+in: path
+required: true
+description: Payment identifier.
+schema:
+type: string
+format: uuid
+example: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+responses:
+"200":
+description: Payment information returned successfully
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/PaymentResponse"
+example:
+payment_id: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+merchant_order_id: order_10001
+amount_minor: 125000
+currency: RUB
+status: SUCCEEDED
+description: Payment for order order_10001
+created_at: "2026-06-20T10:15:30Z"
+updated_at: "2026-06-20T10:16:05Z"
+"401":
+description: Invalid or missing API key
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"403":
+description: Merchant does not have access to this payment
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"404":
+description: Payment not found
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
 
-  /payments/{payment_id}/cancel:
-    post:
-      tags:
-        - Payments
-      summary: Cancel payment
-      operationId: cancelPayment
-      parameters:
-        - name: payment_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Payment cancelled
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentResponse"
-        "401":
-          description: Invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Payment not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Payment cannot be cancelled in the current status
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+/payments/{payment_id}/cancel:
+post:
+tags:
+- Payments
+summary: Cancel payment
+description: Cancels a payment before it is sent to acquiring processing.
+operationId: cancelPayment
+parameters:
+- name: payment_id
+in: path
+required: true
+description: Payment identifier.
+schema:
+type: string
+format: uuid
+example: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+responses:
+"200":
+description: Payment cancelled successfully
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/PaymentResponse"
+example:
+payment_id: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+merchant_order_id: order_10001
+amount_minor: 125000
+currency: RUB
+status: CANCELLED
+description: Payment for order order_10001
+created_at: "2026-06-20T10:15:30Z"
+updated_at: "2026-06-20T10:15:45Z"
+"401":
+description: Invalid or missing API key
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"403":
+description: Merchant does not have access to this payment
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"404":
+description: Payment not found
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"409":
+description: Payment cannot be cancelled in the current status
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
 
-  /acquiring/callback:
-    post:
-      tags:
-        - Acquiring
-      summary: Process acquiring bank callback
-      operationId: processAcquiringCallback
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AcquiringCallbackRequest"
-      responses:
-        "200":
-          description: Callback processed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CallbackProcessingResponse"
-        "400":
-          description: Invalid callback payload
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Payment attempt not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Payment status transition is not allowed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+/acquiring/callback:
+post:
+tags:
+- Acquiring
+summary: Process acquiring callback
+description: Processes payment result received from the mock acquiring bank.
+operationId: processAcquiringCallback
+security: []
+requestBody:
+required: true
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/AcquiringCallbackRequest"
+examples:
+succeeded:
+summary: Successful payment result
+value:
+acquiring_request_id: acq_req_10001
+payment_status: SUCCEEDED
+error_code: null
+error_message: null
+failed:
+summary: Failed payment result
+value:
+acquiring_request_id: acq_req_10002
+payment_status: FAILED
+error_code: INSUFFICIENT_FUNDS
+error_message: Insufficient funds
+responses:
+"200":
+description: Callback processed successfully
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/CallbackProcessingResponse"
+example:
+result: processed
+"400":
+description: Invalid callback payload
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"404":
+description: Payment attempt not found
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
+"409":
+description: Payment is already in a final status
+content:
+application/json:
+schema:
+$ref: "#/components/schemas/ErrorResponse"
 
 components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
+securitySchemes:
+ApiKeyAuth:
+type: apiKey
+in: header
+name: X-API-Key
 
-  schemas:
-    CreatePaymentRequest:
-      type: object
-      required:
-        - merchant_order_id
-        - amount_minor
-        - currency
-      properties:
-        merchant_order_id:
-          type: string
-          example: order-1001
-        amount_minor:
-          type: integer
-          minimum: 1
-          example: 150000
-        currency:
-          type: string
-          minLength: 3
-          maxLength: 3
-          example: RUB
-        description:
-          type: string
-          nullable: true
-          example: Оплата заказа order-1001
+schemas:
+CreatePaymentRequest:
+type: object
+required:
+- merchant_order_id
+- amount_minor
+- currency
+properties:
+merchant_order_id:
+type: string
+description: Merchant-side order identifier.
+example: order_10001
+amount_minor:
+type: integer
+description: Payment amount in minor currency units.
+minimum: 1
+example: 125000
+currency:
+type: string
+description: ISO 4217 currency code.
+minLength: 3
+maxLength: 3
+example: RUB
+description:
+type: string
+description: Optional payment description.
+example: Payment for order order_10001
 
-    PaymentResponse:
-      type: object
-      required:
-        - payment_id
-        - merchant_order_id
-        - amount_minor
-        - currency
-        - status
-        - created_at
-      properties:
-        payment_id:
-          type: string
-          format: uuid
-          example: b3c4f7a0-7d7a-4e2d-9c21-9d9817d64b10
-        merchant_order_id:
-          type: string
-          example: order-1001
-        amount_minor:
-          type: integer
-          example: 150000
-        currency:
-          type: string
-          example: RUB
-        status:
-          $ref: "#/components/schemas/PaymentStatus"
-        created_at:
-          type: string
-          format: date-time
-          example: 2026-06-20T12:00:00Z
-        updated_at:
-          type: string
-          format: date-time
-          nullable: true
-          example: 2026-06-20T12:01:00Z
-
-    AcquiringCallbackRequest:
-      type: object
-      required:
-        - acquiring_request_id
-        - status
-      properties:
-        acquiring_request_id:
-          type: string
-          example: acq-req-1001
-        status:
-          type: string
-          enum:
-            - SUCCEEDED
-            - FAILED
-          example: SUCCEEDED
-        error_code:
-          type: string
-          nullable: true
-          example: BANK_DECLINED
-        error_message:
-          type: string
-          nullable: true
-          example: Payment was declined by acquiring bank
-
-    CallbackProcessingResponse:
-      type: object
-      required:
-        - result
-      properties:
-        result:
-          type: string
-          example: processed
-
-    MerchantWebhookPayload:
-      type: object
-      required:
-        - event_id
-        - event_type
-        - payment_id
-        - merchant_order_id
-        - amount_minor
-        - currency
-        - status
-        - created_at
-      properties:
-        event_id:
-          type: string
-          example: evt-1001
-        event_type:
-          type: string
-          enum:
-            - payment.succeeded
-            - payment.failed
-            - payment.cancelled
-          example: payment.succeeded
-        payment_id:
-          type: string
-          format: uuid
-          example: b3c4f7a0-7d7a-4e2d-9c21-9d9817d64b10
-        merchant_order_id:
-          type: string
-          example: order-1001
-        amount_minor:
-          type: integer
-          example: 150000
-        currency:
-          type: string
-          example: RUB
-        status:
-          $ref: "#/components/schemas/PaymentStatus"
-        created_at:
-          type: string
-          format: date-time
-          example: 2026-06-20T12:00:00Z
-
-    PaymentStatus:
+```
+PaymentResponse:
+  type: object
+  required:
+    - payment_id
+    - merchant_order_id
+    - amount_minor
+    - currency
+    - status
+    - created_at
+    - updated_at
+  properties:
+    payment_id:
       type: string
+      format: uuid
+      description: Payment identifier.
+      example: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+    merchant_order_id:
+      type: string
+      description: Merchant-side order identifier.
+      example: order_10001
+    amount_minor:
+      type: integer
+      description: Payment amount in minor currency units.
+      example: 125000
+    currency:
+      type: string
+      description: ISO 4217 currency code.
+      example: RUB
+    status:
+      $ref: "#/components/schemas/PaymentStatus"
+    description:
+      type: string
+      nullable: true
+      description: Optional payment description.
+      example: Payment for order order_10001
+    created_at:
+      type: string
+      format: date-time
+      description: Payment creation timestamp.
+      example: "2026-06-20T10:15:30Z"
+    updated_at:
+      type: string
+      format: date-time
+      description: Last payment update timestamp.
+      example: "2026-06-20T10:16:05Z"
+
+AcquiringCallbackRequest:
+  type: object
+  required:
+    - acquiring_request_id
+    - payment_status
+  properties:
+    acquiring_request_id:
+      type: string
+      description: Identifier of the acquiring request created for payment processing.
+      example: acq_req_10001
+    payment_status:
+      type: string
+      description: Final payment status returned by the mock acquiring bank.
       enum:
-        - CREATED
-        - PROCESSING
         - SUCCEEDED
         - FAILED
-        - CANCELLED
+      example: SUCCEEDED
+    error_code:
+      type: string
+      nullable: true
+      description: Error code returned by the acquiring bank.
+      example: INSUFFICIENT_FUNDS
+    error_message:
+      type: string
+      nullable: true
+      description: Error message returned by the acquiring bank.
+      example: Insufficient funds
 
-    ErrorResponse:
+CallbackProcessingResponse:
+  type: object
+  required:
+    - result
+  properties:
+    result:
+      type: string
+      description: Callback processing result.
+      example: processed
+
+MerchantWebhookPayload:
+  type: object
+  description: Payload sent by the payment gateway to the merchant webhook URL.
+  required:
+    - event_id
+    - event_type
+    - payment_id
+    - merchant_order_id
+    - amount_minor
+    - currency
+    - status
+    - created_at
+  properties:
+    event_id:
+      type: string
+      format: uuid
+      description: Webhook event identifier.
+      example: 9b2a9dc2-04dd-4b9d-8b28-2e4c0e889f13
+    event_type:
+      type: string
+      description: Webhook event type.
+      enum:
+        - payment.succeeded
+        - payment.failed
+        - payment.cancelled
+      example: payment.succeeded
+    payment_id:
+      type: string
+      format: uuid
+      description: Payment identifier.
+      example: 4f7a9c2e-1a4c-4a3a-9d91-7f25d5c2a901
+    merchant_order_id:
+      type: string
+      description: Merchant-side order identifier.
+      example: order_10001
+    amount_minor:
+      type: integer
+      description: Payment amount in minor currency units.
+      example: 125000
+    currency:
+      type: string
+      description: ISO 4217 currency code.
+      example: RUB
+    status:
+      $ref: "#/components/schemas/PaymentStatus"
+    created_at:
+      type: string
+      format: date-time
+      description: Webhook event creation timestamp.
+      example: "2026-06-20T10:16:10Z"
+
+PaymentStatus:
+  type: string
+  description: Payment lifecycle status.
+  enum:
+    - CREATED
+    - PROCESSING
+    - SUCCEEDED
+    - FAILED
+    - CANCELLED
+  example: CREATED
+
+ErrorResponse:
+  type: object
+  required:
+    - error_code
+    - message
+  properties:
+    error_code:
+      type: string
+      description: Machine-readable error code.
+      example: VALIDATION_ERROR
+    message:
+      type: string
+      description: Human-readable error message.
+      example: Invalid request parameters
+    details:
       type: object
-      required:
-        - error_code
-        - message
-      properties:
-        error_code:
-          type: string
-          example: INVALID_REQUEST
-        message:
-          type: string
-          example: Request validation failed
+      nullable: true
+      description: Additional error details.
+      additionalProperties: true
 ```
