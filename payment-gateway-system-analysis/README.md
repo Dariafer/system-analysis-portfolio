@@ -1,9 +1,5 @@
 # Система обработки платежей / Payment Gateway System Analysis
 
-Учебный проект по системному анализу системы обработки платежей.
-Educational system analysis project for a payment processing system.
-# Система обработки платежей / Payment Gateway System Analysis
-
 Проект по системному анализу учебной системы обработки платежей для интернет-магазинов.
 
 The project describes system analysis artifacts for a payment processing system used by online merchants.
