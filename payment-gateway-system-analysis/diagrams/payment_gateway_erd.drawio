@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net" agent="ChatGPT">
+  <diagram id="payment_gateway_erd" name="ERD">
+    <mxGraphModel dx="1998" dy="858" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1240" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#111827;" value="ERD: Система обработки платежей" vertex="1">
+          <mxGeometry height="32" width="560" x="320" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="merchants" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#DBEAFE;strokeColor=#3B82F6;fontColor=#111827;" value="&lt;b&gt;merchants&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;name: varchar&lt;br&gt;api_key_hash: varchar&lt;br&gt;webhook_url: varchar&lt;br&gt;status: varchar&lt;br&gt;created_at: timestamp&lt;br&gt;updated_at: timestamp" vertex="1">
+          <mxGeometry height="180" width="265" x="55" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="payments" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#DCFCE7;strokeColor=#22C55E;fontColor=#111827;" value="&lt;b&gt;payments&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; merchant_id: uuid&lt;br&gt;merchant_order_id: varchar&lt;br&gt;amount_minor: integer&lt;br&gt;currency: char(3)&lt;br&gt;status: varchar&lt;br&gt;description: text&lt;br&gt;created_at: timestamp&lt;br&gt;updated_at: timestamp&lt;br&gt;&lt;br&gt;&lt;b&gt;UK&lt;/b&gt; (merchant_id, merchant_order_id)" vertex="1">
+          <mxGeometry height="240" width="270" x="440" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_attempts" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#FEF3C7;strokeColor=#F59E0B;fontColor=#111827;" value="&lt;b&gt;payment_attempts&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; payment_id: uuid&lt;br&gt;acquiring_request_id: varchar&lt;br&gt;status: varchar&lt;br&gt;error_code: varchar nullable&lt;br&gt;error_message: text nullable&lt;br&gt;created_at: timestamp&lt;br&gt;finished_at: timestamp nullable" vertex="1">
+          <mxGeometry height="180" width="280" x="870" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="webhook_events" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#FFEDD5;strokeColor=#FB923C;fontColor=#111827;" value="&lt;b&gt;webhook_events&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; payment_id: uuid&lt;br&gt;event_type: varchar&lt;br&gt;payload: jsonb&lt;br&gt;status: varchar&lt;br&gt;attempt_count: integer&lt;br&gt;last_error: text nullable&lt;br&gt;created_at: timestamp&lt;br&gt;next_retry_at: timestamp nullable&lt;br&gt;sent_at: timestamp nullable" vertex="1">
+          <mxGeometry height="220" width="270" x="870" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="idempotency_keys" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#F3E8FF;strokeColor=#A855F7;fontColor=#111827;" value="&lt;b&gt;idempotency_keys&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; merchant_id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; payment_id: uuid nullable&lt;br&gt;key: varchar&lt;br&gt;request_hash: varchar&lt;br&gt;response_code: integer nullable&lt;br&gt;response_body: jsonb nullable&lt;br&gt;created_at: timestamp&lt;br&gt;expires_at: timestamp&lt;br&gt;&lt;br&gt;&lt;b&gt;UK&lt;/b&gt; (merchant_id, key)&lt;br&gt;&lt;b&gt;UK&lt;/b&gt; (payment_id) nullable" vertex="1">
+          <mxGeometry height="250" width="290" x="50" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="transaction_logs" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=8;spacingTop=8;fontSize=12;arcSize=12;strokeWidth=2;shadow=0;fillColor=#FEE2E2;strokeColor=#EF4444;fontColor=#111827;" value="&lt;b&gt;transaction_logs&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id: uuid&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; payment_id: uuid&lt;br&gt;event_type: varchar&lt;br&gt;old_status: varchar nullable&lt;br&gt;new_status: varchar nullable&lt;br&gt;details: jsonb&lt;br&gt;created_at: timestamp" vertex="1">
+          <mxGeometry height="200" width="245" x="455" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_merchants_payments" edge="1" parent="1" source="merchants" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERone;endArrow=ERzeroToMany;" target="payments" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="230" />
+              <mxPoint x="410" y="230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_merchants_idempotency" edge="1" parent="1" source="merchants" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERone;endArrow=ERzeroToMany;" target="idempotency_keys" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="183" y="420" />
+              <mxPoint x="183" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_payments_attempts" edge="1" parent="1" source="payments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERone;endArrow=ERzeroToMany;" target="payment_attempts" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="780" y="220" />
+              <mxPoint x="780" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_payments_webhooks" edge="1" parent="1" source="payments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERone;endArrow=ERzeroToMany;" target="webhook_events" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="350" />
+              <mxPoint x="790" y="350" />
+              <mxPoint x="790" y="610" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_payments_logs" edge="1" parent="1" source="payments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERone;endArrow=ERzeroToMany;" target="transaction_logs" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="595" y="510" />
+              <mxPoint x="595" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_payments_idempotency" edge="1" parent="1" source="payments" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#374151;strokeWidth=2;startFill=0;endFill=0;startArrow=ERzeroToOne;endArrow=ERzeroToOne;" target="idempotency_keys" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="360" />
+              <mxPoint x="420" y="360" />
+              <mxPoint x="420" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
