@@ -32,3 +32,12 @@ The database stores information about merchants, payments, payment attempts, ide
 Таблица `payments` является центральной сущностью модели данных. Остальные таблицы дополняют ее: фиксируют попытки оплаты, защищают от повторного создания платежей, хранят события webhook и журналируют операции.
 
 The `payments` table is the central entity of the data model. Other tables support it by storing payment attempts, preventing duplicate payment creation, storing webhook events, and logging operations.
+## ERD-диаграмма / ERD Diagram
+
+![ERD: Система обработки платежей](../diagrams/payment_gateway_erd.png)
+
+Редактируемый файл draw.io: [payment_gateway_erd.drawio](../diagrams/payment_gateway_erd.drawio)
+
+Диаграмма отражает основные сущности системы обработки платежей: мерчантов, платежи, попытки оплаты, ключи идемпотентности, webhook-события и технические логи.
+
+The diagram describes the main entities of the payment processing system: merchants, payments, payment attempts, idempotency keys, webhook events, and transaction logs.
