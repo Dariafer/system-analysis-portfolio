@@ -1,4 +1,5 @@
 # Система обработки платежей / Payment Gateway System Analysis
+![Backend tests](https://github.com/Dariafer/system-analysis-portfolio/actions/workflows/backend-tests.yml/badge.svg)
 
 Проект по системному анализу учебной системы обработки платежей для интернет-магазинов.
 
