@@ -109,12 +109,3 @@ The sequence diagram shows interaction between the merchant, Payment Gateway API
 * Антифрод не реализуется / Anti-fraud is not implemented.
 * Личный кабинет мерчанта не реализуется / Merchant dashboard is not implemented.
 
-## Дальнейшее развитие / Future Improvements
-
-* Добавить полные и частичные возвраты / Add full and partial refunds.
-* Добавить сценарий холдирования и списания средств / Add authorization and capture flow.
-* Описать retry policy для webhook-уведомлений / Define webhook retry policy.
-* Добавить личный кабинет мерчанта / Add merchant dashboard.
-* Расширить аудит и журналирование / Extend audit trail and logging.
-* Добавить базовые антифрод-проверки / Add basic anti-fraud checks.
-* Проверить OpenAPI-спецификацию через Swagger Editor / Validate OpenAPI specification with Swagger Editor.
