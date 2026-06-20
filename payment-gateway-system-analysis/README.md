@@ -111,3 +111,40 @@ The sequence diagram shows interaction between the merchant, Payment Gateway API
 * Антифрод не реализуется / Anti-fraud is not implemented.
 * Личный кабинет мерчанта не реализуется / Merchant dashboard is not implemented.
 
+## Backend MVP
+
+В проект добавлена минимальная backend-реализация платежного шлюза на FastAPI.
+
+The project includes a minimal FastAPI backend implementation of the payment gateway.
+
+### Реализовано / Implemented
+
+* `GET /health` — проверка работоспособности API.
+* `POST /api/v1/payments` — создание платежа.
+* `GET /api/v1/payments/{payment_id}` — получение платежа и его статуса.
+* `POST /api/v1/payments/{payment_id}/cancel` — отмена платежа.
+* `POST /api/v1/acquiring/callback` — обработка callback от mock acquiring bank.
+* Проверка `X-API-Key`.
+* Проверка `Idempotency-Key`.
+* In-memory хранилище для MVP.
+* Автотесты через `pytest`.
+* GitHub Actions workflow для автоматического запуска backend-тестов.
+
+### Backend stack
+
+* Python
+* FastAPI
+* Pydantic
+* Pytest
+* Uvicorn
+* GitHub Actions
+
+### Backend location
+
+Backend-код находится в папке:
+
+`backend/`
+
+Backend documentation:
+
+`backend/README.md`
