@@ -18,16 +18,27 @@ from app.services.payment_service import (
 router = APIRouter(prefix="/api/v1", tags=["Payments"])
 
 
-def validate_api_key(x_api_key: str | None) -> None:
-    if not x_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error_code": "UNAUTHORIZED",
-                "message": "Missing X-API-Key header.",
-            },
-        )
+from uuid import UUID
 
+from fastapi import APIRouter, Header, HTTPException, status
+
+from app.core.config import get_settings
+from app.schemas.payment import (
+    AcquiringCallbackRequest,
+    CallbackProcessingResponse,
+    CreatePaymentRequest,
+    PaymentResponse,
+)
+from app.services.payment_service import (
+    cancel_payment,
+    create_payment,
+    get_payment,
+    process_acquiring_callback,
+)
+
+settings = get_settings()
+
+router = APIRouter(prefix=settings.api_v1_prefix, tags=["Payments"])
 
 @router.post(
     "/payments",
