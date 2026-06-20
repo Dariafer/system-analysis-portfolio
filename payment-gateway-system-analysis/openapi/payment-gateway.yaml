@@ -1,0 +1,168 @@
+openapi: 3.0.3
+
+info:
+  title: Payment Gateway API
+  version: 1.0.0
+  description: API for creating and processing payments in a payment gateway system.
+
+servers:
+  - url: http://localhost:8000/api/v1
+
+paths:
+  /payments:
+    post:
+      summary: Create payment
+      operationId: createPayment
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Unique key used to prevent duplicate payment creation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+      responses:
+        "201":
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Invalid request
+        "409":
+          description: Duplicate idempotency key conflict
+
+  /payments/{payment_id}:
+    get:
+      summary: Get payment by id
+      operationId: getPaymentById
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Payment found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "404":
+          description: Payment not found
+
+  /payments/{payment_id}/cancel:
+    post:
+      summary: Cancel payment
+      operationId: cancelPayment
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Payment cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "409":
+          description: Payment cannot be cancelled in the current status
+        "404":
+          description: Payment not found
+
+  /acquiring/callback:
+    post:
+      summary: Process acquiring bank callback
+      operationId: processAcquiringCallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcquiringCallbackRequest"
+      responses:
+        "200":
+          description: Callback processed
+        "400":
+          description: Invalid callback payload
+
+components:
+  schemas:
+    CreatePaymentRequest:
+      type: object
+      required:
+        - merchant_order_id
+        - amount_minor
+        - currency
+      properties:
+        merchant_order_id:
+          type: string
+          example: order-1001
+        amount_minor:
+          type: integer
+          example: 150000
+        currency:
+          type: string
+          example: RUB
+        description:
+          type: string
+          example: Payment for order-1001
+
+    PaymentResponse:
+      type: object
+      required:
+        - payment_id
+        - merchant_order_id
+        - amount_minor
+        - currency
+        - status
+      properties:
+        payment_id:
+          type: string
+          format: uuid
+        merchant_order_id:
+          type: string
+        amount_minor:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - CREATED
+            - PROCESSING
+            - SUCCEEDED
+            - FAILED
+            - CANCELLED
+
+    AcquiringCallbackRequest:
+      type: object
+      required:
+        - acquiring_request_id
+        - status
+      properties:
+        acquiring_request_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - SUCCEEDED
+            - FAILED
+        error_code:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
