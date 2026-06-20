@@ -29,6 +29,22 @@ def test_create_payment_success() -> None:
     )
 
     assert response.status_code == 201
+    
+    def test_create_payment_rejects_invalid_api_key() -> None:
+    response = client.post(
+        "/api/v1/payments",
+        headers={
+            "X-API-Key": "wrong-api-key",
+            "Idempotency-Key": "idem-invalid-api-key",
+        },
+        json={
+            "merchant_order_id": "order_invalid_api_key",
+            "amount_minor": 10000,
+            "currency": "RUB",
+        },
+    )
+
+    assert response.status_code == 401
 
     data = response.json()
 
