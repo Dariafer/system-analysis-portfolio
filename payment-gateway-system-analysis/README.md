@@ -47,15 +47,14 @@ The goal is to demonstrate the system analyst workflow: MVP scope definition, ac
 Редактируемый файл: [`payment_gateway_erd.drawio`](diagrams/payment_gateway_erd.drawio)
 
 ## MVP-функции / MVP Features
-
-- Создание платежа.
-- Получение статуса платежа.
-- Проверка ключа идемпотентности.
-- Обработка результата от mock acquiring bank.
-- Обновление статуса платежа.
-- Формирование webhook-события.
-- Отправка webhook-уведомления мерчанту.
-- Хранение данных в PostgreSQL.
+- Создание платежа / Payment creation.
+- Получение статуса платежа / Payment status retrieval.
+- Проверка ключа идемпотентности / Idempotency key validation.
+- Обработка результата от mock acquiring bank / Mock acquiring bank result processing.
+- Обновление статуса платежа / Payment status update.
+- Формирование webhook-события / Webhook event creation.
+- Отправка webhook-уведомления мерчанту / Webhook notification delivery to merchant.
+- Хранение данных в PostgreSQL / Data storage in PostgreSQL.
 
 ## Стек проектирования / Design Stack
 
@@ -70,8 +69,8 @@ The goal is to demonstrate the system analyst workflow: MVP scope definition, ac
 
 ## Ограничения MVP / MVP Limitations
 
-- Реальный эквайринг не подключается.
-- Банковские карты не обрабатываются.
-- PCI DSS не входит в рамки MVP.
-- Refund-сценарии не входят в MVP.
-- Антифрод не реализуется.
+- Реальный эквайринг не подключается / Real acquiring is not connected.
+- Банковские карты не обрабатываются / Bank cards are not processed.
+- PCI DSS не входит в рамки MVP / PCI DSS compliance is out of MVP scope.
+- Refund-сценарии не входят в MVP / Refund scenarios are out of MVP scope.
+- Антифрод не реализуется / Anti-fraud is not implemented.
