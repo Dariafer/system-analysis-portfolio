@@ -10,7 +10,7 @@ def test_health_check() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "ok"
 
 
 def test_create_payment_success() -> None:
@@ -29,22 +29,6 @@ def test_create_payment_success() -> None:
     )
 
     assert response.status_code == 201
-    
-    def test_create_payment_rejects_invalid_api_key() -> None:
-    response = client.post(
-        "/api/v1/payments",
-        headers={
-            "X-API-Key": "wrong-api-key",
-            "Idempotency-Key": "idem-invalid-api-key",
-        },
-        json={
-            "merchant_order_id": "order_invalid_api_key",
-            "amount_minor": 10000,
-            "currency": "RUB",
-        },
-    )
-
-    assert response.status_code == 401
 
     data = response.json()
 
@@ -55,8 +39,6 @@ def test_create_payment_success() -> None:
     assert data["payment_id"] is not None
 
 
-
-
 def test_create_payment_requires_api_key() -> None:
     response = client.post(
         "/api/v1/payments",
@@ -65,6 +47,23 @@ def test_create_payment_requires_api_key() -> None:
         },
         json={
             "merchant_order_id": "order_without_api_key",
+            "amount_minor": 10000,
+            "currency": "RUB",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_create_payment_rejects_invalid_api_key() -> None:
+    response = client.post(
+        "/api/v1/payments",
+        headers={
+            "X-API-Key": "wrong-api-key",
+            "Idempotency-Key": "idem-invalid-api-key",
+        },
+        json={
+            "merchant_order_id": "order_invalid_api_key",
             "amount_minor": 10000,
             "currency": "RUB",
         },
@@ -146,6 +145,8 @@ def test_get_payment_success() -> None:
         },
     )
 
+    assert create_response.status_code == 201
+
     payment_id = create_response.json()["payment_id"]
 
     get_response = client.get(
@@ -174,6 +175,8 @@ def test_cancel_payment_success() -> None:
         },
     )
 
+    assert create_response.status_code == 201
+
     payment_id = create_response.json()["payment_id"]
 
     cancel_response = client.post(
@@ -200,6 +203,8 @@ def test_acquiring_callback_success() -> None:
             "currency": "RUB",
         },
     )
+
+    assert create_response.status_code == 201
 
     payment_id = create_response.json()["payment_id"]
     acquiring_request_id = f"acq_{payment_id}"
