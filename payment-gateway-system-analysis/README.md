@@ -23,7 +23,6 @@ The goal is to demonstrate the system analyst workflow: MVP scope definition, ac
 | `docs/07_api_design.md`                  | Проектирование API / API design                                        |
 | `docs/08_non_functional_requirements.md` | Нефункциональные требования / Non-functional requirements              |
 | `docs/09_risks.md`                       | Риски и ограничения / Risks and limitations                            |
-| `docs/09_risks.md` | Риски и ограничения / Risks and limitations |
 | `docs/10_sequence_diagram.md` | Диаграмма последовательности / Sequence diagram |
 | `openapi/payment-gateway.yaml` | OpenAPI-спецификация / OpenAPI specification |
 | `openapi/payment-gateway.yaml`           | OpenAPI-спецификация / OpenAPI specification                           |
