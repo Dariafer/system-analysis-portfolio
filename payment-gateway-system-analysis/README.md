@@ -25,7 +25,6 @@ The goal is to demonstrate the system analyst workflow: MVP scope definition, ac
 | `docs/09_risks.md`                       | Риски и ограничения / Risks and limitations                            |
 | `docs/10_sequence_diagram.md` | Диаграмма последовательности / Sequence diagram |
 | `openapi/payment-gateway.yaml` | OpenAPI-спецификация / OpenAPI specification |
-| `openapi/payment-gateway.yaml`           | OpenAPI-спецификация / OpenAPI specification                           |
 | `diagrams/`                              | BPMN, ERD, State Machine и Sequence Diagram                            |
 
 ## Основные артефакты / Main Artifacts
