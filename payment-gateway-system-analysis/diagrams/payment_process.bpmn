@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_PaymentGateway" targetNamespace="http://example.com/payment-gateway" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.16.0">
+  <bpmn:collaboration id="Collaboration_PaymentGateway">
+    <bpmn:participant id="Participant_Merchant" name="Мерчант" processRef="Process_Merchant" />
+    <bpmn:participant id="Participant_Gateway" name="Payment Gateway" processRef="Process_Gateway" />
+    <bpmn:participant id="Participant_Bank" name="Заглушка банка-эквайера" processRef="Process_Bank" />
+    <bpmn:participant id="Participant_MerchantSystem" name="Система мерчанта" processRef="Process_MerchantSystem" />
+    <bpmn:messageFlow id="MessageFlow_CreatePayment" name="POST /api/v1/payments" sourceRef="Merchant_SendCreatePayment" targetRef="Gateway_Start" />
+    <bpmn:messageFlow id="MessageFlow_PaymentResponse" name="201 Created / 200 OK" sourceRef="Gateway_SendPaymentResponse" targetRef="Merchant_ReceivePaymentResponse" />
+    <bpmn:messageFlow id="MessageFlow_ToBank" name="Запрос на оплату" sourceRef="Gateway_SendToBank" targetRef="Bank_ProcessPayment" />
+    <bpmn:messageFlow id="MessageFlow_Callback" name="POST /api/v1/acquiring/callback" sourceRef="Bank_SendCallback" targetRef="Gateway_CatchCallback" />
+    <bpmn:messageFlow id="MessageFlow_Webhook" name="POST webhook_url" sourceRef="Gateway_SendWebhook" targetRef="MerchantSystem_ReceiveWebhook" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Merchant" isExecutable="false">
+    <bpmn:startEvent id="Merchant_Start" name="Нужно создать платеж" />
+    <bpmn:sendTask id="Merchant_SendCreatePayment" name="Отправить запрос на создание платежа" />
+    <bpmn:receiveTask id="Merchant_ReceivePaymentResponse" name="Получить ответ по платежу" />
+    <bpmn:endEvent id="Merchant_End" name="Ответ получен" />
+    <bpmn:sequenceFlow id="Merchant_Flow_1" sourceRef="Merchant_Start" targetRef="Merchant_SendCreatePayment" />
+    <bpmn:sequenceFlow id="Merchant_Flow_2" sourceRef="Merchant_SendCreatePayment" targetRef="Merchant_ReceivePaymentResponse" />
+    <bpmn:sequenceFlow id="Merchant_Flow_3" sourceRef="Merchant_ReceivePaymentResponse" targetRef="Merchant_End" />
+  </bpmn:process>
+  <bpmn:process id="Process_Gateway" isExecutable="false">
+    <bpmn:dataStoreReference id="DataStore_PostgreSQL" name="PostgreSQL" />
+    <bpmn:startEvent id="Gateway_Start" name="Запрос на создание платежа" />
+    <bpmn:serviceTask id="Gateway_CheckApiKey" name="Проверить X-API-Key" />
+    <bpmn:serviceTask id="Gateway_CheckIdempotency" name="Проверить Idempotency-Key" />
+    <bpmn:exclusiveGateway id="Gateway_IdempotencyGateway" name="Ключ уже использовался?" />
+    <bpmn:serviceTask id="Gateway_GetExistingPayment" name="Получить ранее созданный платеж" />
+    <bpmn:sendTask id="Gateway_SendPaymentResponse" name="Вернуть ответ мерчанту" />
+    <bpmn:endEvent id="Gateway_EndExisting" name="Повторный запрос обработан" />
+    <bpmn:serviceTask id="Gateway_CreatePayment" name="Создать payment со статусом CREATED" />
+    <bpmn:serviceTask id="Gateway_SaveIdempotency" name="Создать запись idempotency_key" />
+    <bpmn:serviceTask id="Gateway_CreateAttempt" name="Создать payment_attempt" />
+    <bpmn:serviceTask id="Gateway_SetProcessing" name="Установить статус PROCESSING" />
+    <bpmn:sendTask id="Gateway_SendToBank" name="Отправить запрос в банк-эквайер" />
+    <bpmn:serviceTask id="Gateway_FindAttempt" name="Найти payment_attempt по acquiring_request_id" />
+    <bpmn:exclusiveGateway id="Gateway_ResultGateway" name="Результат успешный?" />
+    <bpmn:serviceTask id="Gateway_SetSucceeded" name="Установить статус SUCCEEDED" />
+    <bpmn:serviceTask id="Gateway_SetFailed" name="Установить статус FAILED" />
+    <bpmn:exclusiveGateway id="Gateway_StatusJoin" />
+    <bpmn:serviceTask id="Gateway_CreateWebhookEvent" name="Создать webhook_event" />
+    <bpmn:sendTask id="Gateway_SendWebhook" name="Отправить webhook мерчанту" />
+    <bpmn:serviceTask id="Gateway_MarkWebhookSent" name="Обновить webhook_events.status = SENT" />
+    <bpmn:endEvent id="Gateway_End" name="Платеж обработан" />
+    <bpmn:sequenceFlow id="Gateway_Flow_1" sourceRef="Gateway_Start" targetRef="Gateway_CheckApiKey" />
+    <bpmn:sequenceFlow id="Gateway_Flow_2" sourceRef="Gateway_CheckApiKey" targetRef="Gateway_CheckIdempotency" />
+    <bpmn:sequenceFlow id="Gateway_Flow_3" sourceRef="Gateway_CheckIdempotency" targetRef="Gateway_IdempotencyGateway" />
+    <bpmn:sequenceFlow id="Gateway_Flow_Existing" name="Да" sourceRef="Gateway_IdempotencyGateway" targetRef="Gateway_GetExistingPayment" />
+    <bpmn:sequenceFlow id="Gateway_Flow_Existing_2" sourceRef="Gateway_GetExistingPayment" targetRef="Gateway_SendPaymentResponse" />
+    <bpmn:sequenceFlow id="Gateway_Flow_Existing_3" sourceRef="Gateway_SendPaymentResponse" targetRef="Gateway_EndExisting" />
+    <bpmn:sequenceFlow id="Gateway_Flow_New" name="Нет" sourceRef="Gateway_IdempotencyGateway" targetRef="Gateway_CreatePayment" />
+    <bpmn:sequenceFlow id="Gateway_Flow_4" sourceRef="Gateway_CreatePayment" targetRef="Gateway_SaveIdempotency" />
+    <bpmn:sequenceFlow id="Gateway_Flow_5" sourceRef="Gateway_SaveIdempotency" targetRef="Gateway_CreateAttempt" />
+    <bpmn:sequenceFlow id="Gateway_Flow_6" sourceRef="Gateway_CreateAttempt" targetRef="Gateway_SetProcessing" />
+    <bpmn:sequenceFlow id="Gateway_Flow_7" sourceRef="Gateway_SetProcessing" targetRef="Gateway_SendToBank" />
+    <bpmn:sequenceFlow id="Gateway_Flow_8" sourceRef="Gateway_SendToBank" targetRef="Gateway_CatchCallback" />
+    <bpmn:sequenceFlow id="Gateway_Flow_9" sourceRef="Gateway_CatchCallback" targetRef="Gateway_FindAttempt" />
+    <bpmn:sequenceFlow id="Gateway_Flow_10" sourceRef="Gateway_FindAttempt" targetRef="Gateway_ResultGateway" />
+    <bpmn:sequenceFlow id="Gateway_Flow_Success" name="Да" sourceRef="Gateway_ResultGateway" targetRef="Gateway_SetSucceeded" />
+    <bpmn:sequenceFlow id="Gateway_Flow_Fail" name="Нет" sourceRef="Gateway_ResultGateway" targetRef="Gateway_SetFailed" />
+    <bpmn:sequenceFlow id="Gateway_Flow_11" sourceRef="Gateway_SetSucceeded" targetRef="Gateway_StatusJoin" />
+    <bpmn:sequenceFlow id="Gateway_Flow_12" sourceRef="Gateway_SetFailed" targetRef="Gateway_StatusJoin" />
+    <bpmn:sequenceFlow id="Gateway_Flow_13" sourceRef="Gateway_StatusJoin" targetRef="Gateway_CreateWebhookEvent" />
+    <bpmn:sequenceFlow id="Gateway_Flow_14" sourceRef="Gateway_CreateWebhookEvent" targetRef="Gateway_SendWebhook" />
+    <bpmn:sequenceFlow id="Gateway_Flow_15" sourceRef="Gateway_SendWebhook" targetRef="Gateway_MarkWebhookSent" />
+    <bpmn:sequenceFlow id="Gateway_Flow_16" sourceRef="Gateway_MarkWebhookSent" targetRef="Gateway_End" />
+    <bpmn:intermediateCatchEvent id="Gateway_CatchCallback" name="Получить callback от банка">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Callback" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:association id="Association_Payment" sourceRef="Gateway_CreatePayment" targetRef="DataStore_PostgreSQL" />
+    <bpmn:association id="Association_Idempotency" sourceRef="Gateway_SaveIdempotency" targetRef="DataStore_PostgreSQL" />
+    <bpmn:association id="Association_Attempt" sourceRef="Gateway_CreateAttempt" targetRef="DataStore_PostgreSQL" />
+    <bpmn:association id="Association_Webhook" sourceRef="Gateway_CreateWebhookEvent" targetRef="DataStore_PostgreSQL" />
+    <bpmn:association id="Association_WebhookSent" sourceRef="Gateway_MarkWebhookSent" targetRef="DataStore_PostgreSQL" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bank" isExecutable="false">
+    <bpmn:serviceTask id="Bank_ProcessPayment" name="Обработать платеж" />
+    <bpmn:sendTask id="Bank_SendCallback" name="Отправить результат оплаты" />
+    <bpmn:endEvent id="Bank_End" name="Результат отправлен" />
+    <bpmn:sequenceFlow id="Bank_Flow_1" sourceRef="Bank_Start" targetRef="Bank_ProcessPayment" />
+    <bpmn:sequenceFlow id="Bank_Flow_2" sourceRef="Bank_ProcessPayment" targetRef="Bank_SendCallback" />
+    <bpmn:sequenceFlow id="Bank_Flow_3" sourceRef="Bank_SendCallback" targetRef="Bank_End" />
+    <bpmn:startEvent id="Bank_Start" name="Запрос получен" />
+  </bpmn:process>
+  <bpmn:process id="Process_MerchantSystem" isExecutable="false">
+    <bpmn:startEvent id="MerchantSystem_Start" name="Ожидание webhook" />
+    <bpmn:receiveTask id="MerchantSystem_ReceiveWebhook" name="Принять webhook" />
+    <bpmn:serviceTask id="MerchantSystem_UpdateOrder" name="Обновить статус заказа" />
+    <bpmn:endEvent id="MerchantSystem_End" name="Заказ обновлен" />
+    <bpmn:sequenceFlow id="MerchantSystem_Flow_1" sourceRef="MerchantSystem_Start" targetRef="MerchantSystem_ReceiveWebhook" />
+    <bpmn:sequenceFlow id="MerchantSystem_Flow_2" sourceRef="MerchantSystem_ReceiveWebhook" targetRef="MerchantSystem_UpdateOrder" />
+    <bpmn:sequenceFlow id="MerchantSystem_Flow_3" sourceRef="MerchantSystem_UpdateOrder" targetRef="MerchantSystem_End" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_PaymentGateway">
+    <bpmndi:BPMNPlane id="BPMNPlane_PaymentGateway" bpmnElement="Collaboration_PaymentGateway">
+      <bpmndi:BPMNShape id="Shape_Participant_Merchant" bpmnElement="Participant_Merchant" isHorizontal="true">
+        <dc:Bounds x="120" y="60" width="1580" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Merchant_Start" bpmnElement="Merchant_Start">
+        <dc:Bounds x="180" y="107" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Merchant_SendCreatePayment" bpmnElement="Merchant_SendCreatePayment">
+        <dc:Bounds x="260" y="85" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Merchant_ReceivePaymentResponse" bpmnElement="Merchant_ReceivePaymentResponse">
+        <dc:Bounds x="1480" y="85" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Merchant_End" bpmnElement="Merchant_End">
+        <dc:Bounds x="1640" y="107" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Merchant_Flow_1" bpmnElement="Merchant_Flow_1">
+        <di:waypoint x="216" y="125" />
+        <di:waypoint x="260" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Merchant_Flow_2" bpmnElement="Merchant_Flow_2">
+        <di:waypoint x="400" y="125" />
+        <di:waypoint x="1480" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Merchant_Flow_3" bpmnElement="Merchant_Flow_3">
+        <di:waypoint x="1620" y="125" />
+        <di:waypoint x="1640" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_Gateway" bpmnElement="Participant_Gateway" isHorizontal="true">
+        <dc:Bounds x="120" y="230" width="1620" height="520" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_DataStore_PostgreSQL" bpmnElement="DataStore_PostgreSQL">
+        <dc:Bounds x="1120" y="260" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_Start" bpmnElement="Gateway_Start">
+        <dc:Bounds x="180" y="467" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CheckApiKey" bpmnElement="Gateway_CheckApiKey">
+        <dc:Bounds x="250" y="445" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CheckIdempotency" bpmnElement="Gateway_CheckIdempotency">
+        <dc:Bounds x="400" y="445" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_IdempotencyGateway" bpmnElement="Gateway_IdempotencyGateway" isMarkerVisible="true">
+        <dc:Bounds x="570" y="460" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_GetExistingPayment" bpmnElement="Gateway_GetExistingPayment">
+        <dc:Bounds x="650" y="315" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SendPaymentResponse" bpmnElement="Gateway_SendPaymentResponse">
+        <dc:Bounds x="830" y="315" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_EndExisting" bpmnElement="Gateway_EndExisting">
+        <dc:Bounds x="1010" y="337" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CreatePayment" bpmnElement="Gateway_CreatePayment">
+        <dc:Bounds x="650" y="445" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SaveIdempotency" bpmnElement="Gateway_SaveIdempotency">
+        <dc:Bounds x="830" y="445" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CreateAttempt" bpmnElement="Gateway_CreateAttempt">
+        <dc:Bounds x="1010" y="445" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SetProcessing" bpmnElement="Gateway_SetProcessing">
+        <dc:Bounds x="1190" y="445" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SendToBank" bpmnElement="Gateway_SendToBank">
+        <dc:Bounds x="1370" y="445" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_FindAttempt" bpmnElement="Gateway_FindAttempt">
+        <dc:Bounds x="1190" y="585" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_ResultGateway" bpmnElement="Gateway_ResultGateway" isMarkerVisible="true">
+        <dc:Bounds x="1080" y="600" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SetSucceeded" bpmnElement="Gateway_SetSucceeded">
+        <dc:Bounds x="875" y="555" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SetFailed" bpmnElement="Gateway_SetFailed">
+        <dc:Bounds x="875" y="655" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_StatusJoin" bpmnElement="Gateway_StatusJoin" isMarkerVisible="true">
+        <dc:Bounds x="790" y="625" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CreateWebhookEvent" bpmnElement="Gateway_CreateWebhookEvent">
+        <dc:Bounds x="620" y="610" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_SendWebhook" bpmnElement="Gateway_SendWebhook">
+        <dc:Bounds x="440" y="610" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_MarkWebhookSent" bpmnElement="Gateway_MarkWebhookSent">
+        <dc:Bounds x="260" y="610" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_End" bpmnElement="Gateway_End">
+        <dc:Bounds x="180" y="632" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_CatchCallback" bpmnElement="Gateway_CatchCallback">
+        <dc:Bounds x="1532" y="607" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1356" y="585.5" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_1" bpmnElement="Gateway_Flow_1">
+        <di:waypoint x="216" y="485" />
+        <di:waypoint x="250" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_2" bpmnElement="Gateway_Flow_2">
+        <di:waypoint x="370" y="485" />
+        <di:waypoint x="400" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_3" bpmnElement="Gateway_Flow_3">
+        <di:waypoint x="540" y="485" />
+        <di:waypoint x="570" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_Existing" bpmnElement="Gateway_Flow_Existing">
+        <di:waypoint x="595" y="460" />
+        <di:waypoint x="595" y="355" />
+        <di:waypoint x="650" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_Existing_2" bpmnElement="Gateway_Flow_Existing_2">
+        <di:waypoint x="800" y="355" />
+        <di:waypoint x="830" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_Existing_3" bpmnElement="Gateway_Flow_Existing_3">
+        <di:waypoint x="970" y="355" />
+        <di:waypoint x="1010" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_New" bpmnElement="Gateway_Flow_New">
+        <di:waypoint x="620" y="485" />
+        <di:waypoint x="650" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_4" bpmnElement="Gateway_Flow_4">
+        <di:waypoint x="800" y="485" />
+        <di:waypoint x="830" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_5" bpmnElement="Gateway_Flow_5">
+        <di:waypoint x="980" y="485" />
+        <di:waypoint x="1010" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_6" bpmnElement="Gateway_Flow_6">
+        <di:waypoint x="1160" y="485" />
+        <di:waypoint x="1190" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_7" bpmnElement="Gateway_Flow_7">
+        <di:waypoint x="1330" y="485" />
+        <di:waypoint x="1370" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_8" bpmnElement="Gateway_Flow_8">
+        <di:waypoint x="1510" y="485" />
+        <di:waypoint x="1550" y="485" />
+        <di:waypoint x="1550" y="607" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_9" bpmnElement="Gateway_Flow_9">
+        <di:waypoint x="1532" y="625" />
+        <di:waypoint x="1340" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_10" bpmnElement="Gateway_Flow_10">
+        <di:waypoint x="1190" y="625" />
+        <di:waypoint x="1130" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_Success" bpmnElement="Gateway_Flow_Success">
+        <di:waypoint x="1080" y="625" />
+        <di:waypoint x="1053" y="625" />
+        <di:waypoint x="1053" y="580" />
+        <di:waypoint x="1025" y="580" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1029" y="557" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_Fail" bpmnElement="Gateway_Flow_Fail">
+        <di:waypoint x="1080" y="625" />
+        <di:waypoint x="1053" y="625" />
+        <di:waypoint x="1053" y="695" />
+        <di:waypoint x="1025" y="695" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1029" y="658" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_11" bpmnElement="Gateway_Flow_11">
+        <di:waypoint x="875" y="595" />
+        <di:waypoint x="815" y="595" />
+        <di:waypoint x="815" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_12" bpmnElement="Gateway_Flow_12">
+        <di:waypoint x="875" y="695" />
+        <di:waypoint x="815" y="695" />
+        <di:waypoint x="815" y="675" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_13" bpmnElement="Gateway_Flow_13">
+        <di:waypoint x="790" y="650" />
+        <di:waypoint x="760" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_14" bpmnElement="Gateway_Flow_14">
+        <di:waypoint x="620" y="650" />
+        <di:waypoint x="580" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_15" bpmnElement="Gateway_Flow_15">
+        <di:waypoint x="440" y="650" />
+        <di:waypoint x="400" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Gateway_Flow_16" bpmnElement="Gateway_Flow_16">
+        <di:waypoint x="260" y="650" />
+        <di:waypoint x="216" y="650" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_Bank" bpmnElement="Participant_Bank" isHorizontal="true">
+        <dc:Bounds x="120" y="790" width="1620" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Bank_ProcessPayment" bpmnElement="Bank_ProcessPayment">
+        <dc:Bounds x="1340" y="815" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Bank_SendCallback" bpmnElement="Bank_SendCallback">
+        <dc:Bounds x="1510" y="815" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Bank_End" bpmnElement="Bank_End">
+        <dc:Bounds x="1670" y="837" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Bank_Start" bpmnElement="Bank_Start">
+        <dc:Bounds x="1242" y="837" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1219" y="873" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Bank_Flow_1" bpmnElement="Bank_Flow_1">
+        <di:waypoint x="1278" y="855" />
+        <di:waypoint x="1340" y="855" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Bank_Flow_2" bpmnElement="Bank_Flow_2">
+        <di:waypoint x="1480" y="855" />
+        <di:waypoint x="1510" y="855" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Bank_Flow_3" bpmnElement="Bank_Flow_3">
+        <di:waypoint x="1650" y="855" />
+        <di:waypoint x="1670" y="855" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_MerchantSystem" bpmnElement="Participant_MerchantSystem" isHorizontal="true">
+        <dc:Bounds x="120" y="960" width="1620" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_MerchantSystem_Start" bpmnElement="MerchantSystem_Start">
+        <dc:Bounds x="180" y="1007" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_MerchantSystem_ReceiveWebhook" bpmnElement="MerchantSystem_ReceiveWebhook">
+        <dc:Bounds x="260" y="985" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_MerchantSystem_UpdateOrder" bpmnElement="MerchantSystem_UpdateOrder">
+        <dc:Bounds x="440" y="985" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_MerchantSystem_End" bpmnElement="MerchantSystem_End">
+        <dc:Bounds x="620" y="1007" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_MerchantSystem_Flow_1" bpmnElement="MerchantSystem_Flow_1">
+        <di:waypoint x="216" y="1025" />
+        <di:waypoint x="260" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MerchantSystem_Flow_2" bpmnElement="MerchantSystem_Flow_2">
+        <di:waypoint x="400" y="1025" />
+        <di:waypoint x="440" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MerchantSystem_Flow_3" bpmnElement="MerchantSystem_Flow_3">
+        <di:waypoint x="580" y="1025" />
+        <di:waypoint x="620" y="1025" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_CreatePayment" bpmnElement="MessageFlow_CreatePayment">
+        <di:waypoint x="347" y="165" />
+        <di:waypoint x="347" y="220" />
+        <di:waypoint x="198" y="220" />
+        <di:waypoint x="198" y="467" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="323" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_PaymentResponse" bpmnElement="MessageFlow_PaymentResponse">
+        <di:waypoint x="900" y="315" />
+        <di:waypoint x="900" y="150" />
+        <di:waypoint x="1480" y="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1159" y="126" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_ToBank" bpmnElement="MessageFlow_ToBank">
+        <di:waypoint x="1470" y="530" />
+        <di:waypoint x="1470" y="815" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1421" y="754" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Callback" bpmnElement="MessageFlow_Callback">
+        <di:waypoint x="1550" y="815" />
+        <di:waypoint x="1550" y="643" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1548" y="680" width="84" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Webhook" bpmnElement="MessageFlow_Webhook">
+        <di:waypoint x="534" y="690" />
+        <di:waypoint x="534" y="740" />
+        <di:waypoint x="330" y="740" />
+        <di:waypoint x="330" y="985" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="328" y="876" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
