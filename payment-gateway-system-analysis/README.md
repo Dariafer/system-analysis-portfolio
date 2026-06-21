@@ -1,150 +1,188 @@
-# Система обработки платежей / Payment Gateway System Analysis
+# Система обработки платежей
+
 ![Backend tests](https://github.com/Dariafer/system-analysis-portfolio/actions/workflows/backend-tests.yml/badge.svg)
 
-Проект по системному анализу учебной системы обработки платежей для интернет-магазинов.
+Проект описывает учебную систему обработки платежей для интернет-магазинов.
+Основной акцент сделан на системный анализ: определение границ первой версии системы, описание участников, сценариев использования, бизнес-процесса, статусов платежа, структуры данных и API.
 
-The project describes system analysis artifacts for a payment processing system used by online merchants.
+## Цель проекта
 
-## Цель проекта / Project Goal
+Показать полный цикл работы системного аналитика на примере платежного сервиса:
 
-Цель проекта — показать полный цикл работы системного аналитика: определение границ MVP, описание участников системы, моделирование бизнес-процесса, проектирование жизненного цикла платежа, модели данных и API.
+* определить границы первой версии системы;
+* описать участников и их роли;
+* подготовить сценарии использования;
+* описать бизнес-процесс обработки платежа;
+* спроектировать жизненный цикл статусов платежа;
+* подготовить модель данных;
+* описать API;
+* реализовать минимальную серверную часть для проверки проектных решений.
 
-The goal is to demonstrate the system analyst workflow: MVP scope definition, actor description, business process modeling, payment state modeling, database design, and API design.
+## Состав проекта
 
-## Состав проекта / Project Structure
+| Раздел                                   | Описание                           |
+| ---------------------------------------- | ---------------------------------- |
+| `docs/01_scope.md`                       | Границы первой версии системы      |
+| `docs/02_actors.md`                      | Участники системы                  |
+| `docs/03_use_cases.md`                   | Сценарии использования             |
+| `docs/04_business_process.md`            | Бизнес-процесс обработки платежа   |
+| `docs/05_state_machine.md`               | Жизненный цикл платежа             |
+| `docs/06_database_design.md`             | Проектирование базы данных         |
+| `docs/07_api_design.md`                  | Проектирование API                 |
+| `docs/08_non_functional_requirements.md` | Нефункциональные требования        |
+| `docs/09_risks.md`                       | Риски и ограничения                |
+| `docs/10_sequence_diagram.md`            | Диаграмма последовательности       |
+| `openapi/payment-gateway.yaml`           | Спецификация API в формате OpenAPI |
+| `backend/`                               | Минимальная серверная реализация   |
+| `diagrams/`                              | Диаграммы проекта                  |
 
-| Раздел                                   | Описание                                                               |
-| ---------------------------------------- | ---------------------------------------------------------------------- |
-| `docs/01_scope.md`                       | Границы MVP / MVP scope                                                |
-| `docs/02_actors.md`                      | Участники системы / System actors                                      |
-| `docs/03_use_cases.md`                   | Варианты использования / Use cases                                     |
-| `docs/04_business_process.md`            | Бизнес-процесс обработки платежа / Payment processing business process |
-| `docs/05_state_machine.md`               | Жизненный цикл платежа / Payment state machine                         |
-| `docs/06_database_design.md`             | Проектирование базы данных / Database design                           |
-| `docs/07_api_design.md`                  | Проектирование API / API design                                        |
-| `docs/08_non_functional_requirements.md` | Нефункциональные требования / Non-functional requirements              |
-| `docs/09_risks.md`                       | Риски и ограничения / Risks and limitations                            |
-| `docs/10_sequence_diagram.md` | Диаграмма последовательности / Sequence diagram |
-| `openapi/payment-gateway.yaml` | OpenAPI-спецификация / OpenAPI specification |
-| `diagrams/`                              | BPMN, ERD, State Machine и Sequence Diagram                            |
+## Основные артефакты
 
-## Основные артефакты / Main Artifacts
+### BPMN-диаграмма процесса обработки платежа
 
-### Детальная схема обработки платежа / Detailed Payment Processing Flow
+![BPMN-диаграмма процесса обработки платежа](diagrams/bpmn_payment_process_detailed.svg)
 
-![Детальная схема обработки платежа](diagrams/bpmn_payment_process_detailed.png)
+Диаграмма показывает процесс создания и обработки платежа: получение запроса от мерчанта, проверку данных, создание платежа, обращение к тестовой заглушке банка-эквайера, обновление статуса и отправку уведомления мерчанту.
 
-Редактируемый файл: [`bpmn_payment_process_detailed.drawio`](diagrams/bpmn_payment_process_detailed.drawio)
+Файл для редактирования:
 
-Диаграмма показывает основной процесс создания и обработки платежа: создание платежа мерчантом, проверку запроса, создание записей в системе, обращение к заглушке банка-эквайера, обновление статуса платежа и отправку webhook-уведомления мерчанту.
+`diagrams/bpmn_payment_process_detailed.bpmn`
 
-The diagram shows the main payment creation and processing flow: payment creation by the merchant, request validation, system record creation, interaction with the mock acquiring bank, payment status update, and webhook notification delivery to the merchant.
+### Жизненный цикл платежа
 
-### Жизненный цикл платежа / Payment State Machine
+![Жизненный цикл платежа](diagrams/payment_state_machine.svg)
 
-![Жизненный цикл платежа](diagrams/payment_state_machine.png)
+Диаграмма показывает допустимые состояния платежа и переходы между ними:
 
-Редактируемый файл: [`payment_state_machine.drawio`](diagrams/payment_state_machine.drawio)
+* `CREATED` — платеж создан;
+* `PROCESSING` — платеж находится в обработке;
+* `SUCCEEDED` — платеж успешно завершен;
+* `FAILED` — платеж завершился ошибкой;
+* `CANCELLED` — платеж отменен до обработки.
 
-Диаграмма показывает допустимые состояния платежа в рамках MVP: `CREATED`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `CANCELLED`.
+Файл для редактирования:
 
-The diagram shows allowed payment states within the MVP scope: `CREATED`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `CANCELLED`.
+`diagrams/payment_state_machine.svg`
 
-### ERD-модель базы данных / Database ERD
+### ER-диаграмма базы данных
 
-![ERD: Система обработки платежей](diagrams/payment_gateway_erd.png)
+![ER-диаграмма базы данных](diagrams/payment_gateway_erd.svg)
 
-Редактируемый файл: [`payment_gateway_erd.drawio`](diagrams/payment_gateway_erd.drawio)
+ER-диаграмма отражает основные сущности системы:
 
-ERD отражает основные сущности системы: мерчантов, платежи, попытки оплаты, ключи идемпотентности, webhook-события и технические логи.
+* мерчанты;
+* платежи;
+* попытки оплаты;
+* ключи повторных запросов;
+* события уведомлений;
+* журнал технических событий.
 
-The ERD describes the main entities of the system: merchants, payments, payment attempts, idempotency keys, webhook events, and transaction logs.
+Файл для редактирования:
 
-### Диаграмма последовательности создания и обработки платежа / Payment Processing Sequence Diagram
+`diagrams/payment_gateway_erd.svg`
 
-![Диаграмма последовательности создания и обработки платежа](diagrams/sequence_payment_structure.png)
+### Диаграмма последовательности обработки платежа
 
-Диаграмма показывает взаимодействие между мерчантом, Payment Gateway API, Payment Service, PostgreSQL, заглушкой банка-эквайера, Webhook Service и системой мерчанта.
+![Диаграмма последовательности обработки платежа](diagrams/sequence_payment_structure.svg)
 
-The sequence diagram shows interaction between the merchant, Payment Gateway API, Payment Service, PostgreSQL, mock acquiring bank, Webhook Service, and merchant system.
+Диаграмма показывает взаимодействие между мерчантом, API, сервисом обработки платежей, базой данных, тестовой заглушкой банка-эквайера, сервисом уведомлений и системой мерчанта.
 
-## MVP-функции / MVP Features
+Файл для редактирования:
 
-* Создание платежа / Payment creation.
-* Получение статуса платежа / Payment status retrieval.
-* Проверка ключа идемпотентности / Idempotency key validation.
-* Обработка результата от mock acquiring bank / Mock acquiring bank result processing.
-* Обновление статуса платежа / Payment status update.
-* Формирование webhook-события / Webhook event creation.
-* Отправка webhook-уведомления мерчанту / Webhook notification delivery to merchant.
-* Хранение данных в PostgreSQL / Data storage in PostgreSQL.
+`diagrams/sequence_payment_structure.svg`
 
-## Стек проектирования / Design Stack
+## Функции первой версии
 
-* BPMN
-* UML Sequence Diagram
-* ERD
-* State Machine
-* OpenAPI
-* PostgreSQL
-* REST API
-* Webhook
-* Idempotency Key
+В первой версии системы предусмотрены:
 
-## Основные проектные решения / Key Design Decisions
+* создание платежа;
+* получение платежа и его текущего статуса;
+* отмена платежа до отправки в обработку;
+* проверка ключа повторного запроса;
+* обработка результата от тестовой заглушки банка-эквайера;
+* обновление статуса платежа;
+* формирование события уведомления для мерчанта;
+* отправка уведомления в систему мерчанта;
+* хранение данных платежа.
 
-| Решение                         | Обоснование                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| Использование `Idempotency-Key` | Защита от повторного создания платежа при повторной отправке запроса         |
-| Выделение `payment_attempts`    | Возможность фиксировать попытки обработки платежа отдельно от самого платежа |
-| Выделение `webhook_events`      | Возможность хранить события webhook и контролировать их доставку             |
-| Использование state machine     | Контроль допустимых переходов между статусами платежа                        |
-| Mock acquiring bank             | Возможность смоделировать обработку оплаты без подключения реального банка   |
+## Серверная часть
 
-## Ограничения MVP / MVP Limitations
+В проект добавлена минимальная серверная реализация платежного сервиса на FastAPI.
 
-* Реальный эквайринг не подключается / Real acquiring is not connected.
-* Банковские карты не обрабатываются / Bank cards are not processed.
-* PCI DSS не входит в рамки MVP / PCI DSS compliance is out of MVP scope.
-* Refund-сценарии не входят в MVP / Refund scenarios are out of MVP scope.
-* Холдирование средств не входит в MVP / Payment hold is out of MVP scope.
-* Антифрод не реализуется / Anti-fraud is not implemented.
-* Личный кабинет мерчанта не реализуется / Merchant dashboard is not implemented.
+### Реализовано
 
-## Backend MVP
+| Метод  | URL                                    | Назначение                                                      |
+| ------ | -------------------------------------- | --------------------------------------------------------------- |
+| `GET`  | `/health`                              | Проверка работоспособности сервиса                              |
+| `POST` | `/api/v1/payments`                     | Создание платежа                                                |
+| `GET`  | `/api/v1/payments/{payment_id}`        | Получение платежа и его статуса                                 |
+| `POST` | `/api/v1/payments/{payment_id}/cancel` | Отмена платежа                                                  |
+| `POST` | `/api/v1/acquiring/callback`           | Обработка обратного запроса от тестовой заглушки банка-эквайера |
 
-В проект добавлена минимальная backend-реализация платежного шлюза на FastAPI.
+Дополнительно реализованы:
 
-The project includes a minimal FastAPI backend implementation of the payment gateway.
+* проверка `X-API-Key`;
+* проверка `Idempotency-Key`;
+* временное хранение данных в памяти приложения;
+* автотесты через `pytest`;
+* автоматический запуск тестов через GitHub Actions.
 
-### Реализовано / Implemented
+### Технологии серверной части
 
-* `GET /health` — проверка работоспособности API.
-* `POST /api/v1/payments` — создание платежа.
-* `GET /api/v1/payments/{payment_id}` — получение платежа и его статуса.
-* `POST /api/v1/payments/{payment_id}/cancel` — отмена платежа.
-* `POST /api/v1/acquiring/callback` — обработка callback от mock acquiring bank.
-* Проверка `X-API-Key`.
-* Проверка `Idempotency-Key`.
-* In-memory хранилище для MVP.
-* Автотесты через `pytest`.
-* GitHub Actions workflow для автоматического запуска backend-тестов.
+* Python;
+* FastAPI;
+* Pydantic;
+* Pytest;
+* Uvicorn;
+* GitHub Actions.
 
-### Backend stack
-
-* Python
-* FastAPI
-* Pydantic
-* Pytest
-* Uvicorn
-* GitHub Actions
-
-### Backend location
-
-Backend-код находится в папке:
+Код серверной части находится в папке:
 
 `backend/`
 
-Backend documentation:
+Документация по запуску:
 
 `backend/README.md`
+
+## Основные проектные решения
+
+| Решение                               | Обоснование                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| Использование `Idempotency-Key`       | Защищает от повторного создания платежа при повторной отправке одного и того же запроса |
+| Отдельная сущность `payment_attempts` | Позволяет хранить попытки обработки платежа отдельно от самого платежа                  |
+| Отдельная сущность `webhook_events`   | Позволяет хранить события уведомлений и контролировать их доставку                      |
+| Жизненный цикл статусов платежа       | Позволяет ограничить недопустимые переходы между статусами                              |
+| Тестовая заглушка банка-эквайера      | Позволяет проверить процесс обработки платежа без подключения реального банка           |
+
+## Ограничения первой версии
+
+В первую версию системы не входят:
+
+* подключение к реальному банку-эквайеру;
+* обработка данных банковских карт;
+* выполнение требований PCI DSS;
+* возврат платежа;
+* предварительное резервирование суммы;
+* проверка подозрительных операций;
+* личный кабинет мерчанта;
+* подключение PostgreSQL к серверной реализации.
+
+## Возможное развитие проекта
+
+В следующих версиях можно добавить:
+
+* подключение PostgreSQL вместо временного хранения в памяти приложения;
+* миграции базы данных;
+* повторную отправку уведомлений при ошибке доставки;
+* возврат платежа;
+* предварительное резервирование и последующее списание суммы;
+* личный кабинет мерчанта;
+* расширенный журнал действий;
+* проверку подозрительных операций;
+* коллекцию запросов для Postman;
+* описание тестовых сценариев для ручной проверки API.
+
+## Статус проекта
+
+Проект включает аналитическую часть и минимальную серверную реализацию.
+Аналитические артефакты описывают требования и проектные решения, а серверная часть показывает, как эти решения могут быть реализованы на уровне API.
